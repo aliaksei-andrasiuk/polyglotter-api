@@ -1,0 +1,79 @@
+{
+  "root": true,
+  "env": {
+    "es2021": true,
+    "node": true,
+    "jest": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "project": "tsconfig.eslint.json",
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint", "promise", "jest", "import", "prefer-arrow"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
+    "plugin:promise/recommended",
+    "plugin:jest/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "prefer-arrow/prefer-arrow-functions": [
+      "warn",
+      {
+        "disallowPrototype": true,
+        "singleReturnOnly": false,
+        "classPropertiesAllowed": false
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "ignoreRestSiblings": true, "argsIgnorePattern": "^_" }
+    ],
+    "import/order": [
+      "error",
+      {
+        "newlines-between": "always",
+        "warnOnUnassignedImports": true,
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        },
+        "groups": [["builtin", "external"], "internal", "index"],
+        "pathGroupsExcludedImportTypes": [],
+        "pathGroups": [
+          {
+            "pattern": "{.,..}/services/*.service",
+            "group": "internal",
+            "position": "after"
+          },
+          {
+            "pattern": "{.,..}/repositories/*.repository",
+            "group": "internal",
+            "position": "after"
+          },
+          {
+            "pattern": "{.,..}/controllers/*.controller",
+            "group": "internal",
+            "position": "after"
+          },
+          {
+            "pattern": "{.,..}/routes/*.routes",
+            "group": "internal",
+            "position": "after"
+          },
+          {
+            "pattern": "{.,../src,..}/models/*.model",
+            "group": "internal",
+            "position": "after"
+          }
+        ]
+      }
+    ]
+  }
+}
