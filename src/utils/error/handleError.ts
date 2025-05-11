@@ -1,7 +1,7 @@
 import config from 'config';
 import { Logger } from 'winston';
 
-import { Environment } from '../../enums/environment.enum';
+import { Environment } from '../../types/enums/environment.enum';
 import { HttpError } from '../../types/errors';
 import getFormattedError from './getFormattedError';
 
