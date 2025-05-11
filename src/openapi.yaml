@@ -38,7 +38,7 @@ paths:
       operationId: getDataset
       responses:
         200:
-          $ref: '#/components/responses/translateResponse'
+          $ref: '#/components/responses/datasetResponse'
         400:
           $ref: '#/components/responses/error'
         409:
@@ -66,7 +66,7 @@ components:
     datasetItem:
       type: object
       properties:
-        phraseId::
+        phraseId:
           type: string
         wordId:
           type: string
