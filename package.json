@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "tsnd --respawn \"src/index.ts\"",
-    "start:prod": "node dist/index.js",
+    "start:prod": "node dist/index.js NODE_ENV=production",
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
     "import": "node ./src/scripts/importPhrases.js"
