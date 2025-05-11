@@ -1,2 +1,2 @@
-export * from './searchConfig.route';
 export * from './translate.route';
+export * from './datasets.route';

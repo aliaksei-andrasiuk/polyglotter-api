@@ -1,3 +1,4 @@
+import { disconnectDB } from '../services';
 import handleError from './error/handleError';
 
 type TShutdown = () => Promise<void>;
@@ -18,6 +19,7 @@ export const handleException = (shutdown: TShutdown) => {
             handleError(error);
 
             await shutdown();
+            await disconnectDB();
             process.exit(0);
         } catch (shutdownError) {
             handleError(shutdownError);

@@ -1,7 +1,7 @@
 openapi: 3.0.1
 
 info:
-  title: Job surf API
+  title: Polyglotter API
   version: 1.0.0
 
 servers:
@@ -28,20 +28,17 @@ paths:
           $ref: '#/components/responses/error'
         500:
           $ref: '#/components/responses/error'
-
-  /set-up-search-config:
-    post:
+  /dataset:
+    get:
       security:
         - ApiKeyAuth: []
-      summary: Set up search config
+      summary: gets full dataset
       tags:
-        - SearchConfig
-      operationId: createSearchConfig
-      requestBody:
-        $ref: '#/components/requestBodies/newConfig'
+        - Dataset
+      operationId: getDataset
       responses:
-        201:
-          $ref: '#/components/responses/genericResponse'
+        200:
+          $ref: '#/components/responses/translateResponse'
         400:
           $ref: '#/components/responses/error'
         409:
@@ -55,125 +52,6 @@ components:
       type: string
       format: uuid
 
-    searchLine:
-      type: string
-      minLength: 0
-      maxLength: 128
-
-    justJoinItSeniorities:
-      type: string
-      enum:
-        - all
-        - junior
-        - mid
-        - senior
-
-    noFluffJobsSeniorities:
-      type: string
-      enum:
-        - trainee
-        - junior
-        - mid
-        - senior
-        - expert
-
-    justJoinItCategories:
-      type: string
-      enum:
-        - all
-        - javascript
-        - html
-        - php
-        - ruby
-        - python
-        - java
-        - net
-        - scala
-        - c
-        - mobile
-        - testing
-        - devops
-        - admin
-        - ux
-        - pm
-        - game
-        - analytics
-        - security
-        - data
-        - go
-        - support
-        - erp
-        - architecture
-        - other
-
-    noFluffJobsCategories:
-      type: string
-      enum:
-        - backend
-        - frontend
-        - fullstack
-        - mobile
-        - embedded
-        - testing
-        - devops
-        - architecture
-        - security
-        - gaming
-        - artificial-intelligence
-        - big-data
-        - it-administrator
-        - agile
-        - product-management
-        - project-manager
-        - business-intelligence
-        - business-analyst
-        - ux
-        - support
-        - erp
-        - electronics
-        - telecommunication
-        - electrical-eng
-        - automation
-        - robotics
-        - mechanics
-        - marketing
-        - backoffice
-        - hr
-        - finance
-        - consulting
-        - customer-service
-        - other
-
-    noFluffJobsTechnologies:
-      type: string
-      enum:
-        - JavaScript
-        - .NET
-        - SQL
-        - Java
-        - Python
-        - React
-        - AWS
-        - TypeScript
-        - HTML
-        - Angular
-        - Azure
-        - PHP
-        - Android
-        - Kotlin
-        - Vue.js
-        - iOS
-        - Golang
-        - Spark
-        - Scala
-        - C
-        - Hadoop
-        - Ruby on Rails
-        - Ruby
-        - Flutter
-        - Elixir
-        - React native
-
     translatedItem:
       type: object
       properties:
@@ -185,68 +63,27 @@ components:
           maxLength: 256
       additionalProperties: false
 
-    justJoinItConfig:
+    datasetItem:
       type: object
       properties:
-        searchLine:
-          $ref: '#/components/schemas/searchLine'
-        excludeSearchLine:
-          $ref: '#/components/schemas/searchLine'
-        category:
-          $ref: '#/components/schemas/justJoinItCategories'
-        seniorities:
-          type: array
-          items:
-            $ref: '#/components/schemas/justJoinItSeniorities'
+        phraseId::
+          type: string
+        wordId:
+          type: string
+        sourceRoot:
+          type: string
+        sourcePrefix:
+          type: string
+        sourceWord:
+          type: string
+        targetPhrase:
+          type: string
+        wordsCount:
+          type: integer
+          format: int32
       additionalProperties: false
-
-    noFluffJobsConfig:
-      type: object
-      properties:
-        searchLine:
-          $ref: '#/components/schemas/searchLine'
-        excludeSearchLine:
-          $ref: '#/components/schemas/searchLine'
-        categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/noFluffJobsCategories'
-        seniorities:
-          type: array
-          items:
-            $ref: '#/components/schemas/noFluffJobsSeniorities'
-        technologies:
-          type: array
-          items:
-            $ref: '#/components/schemas/noFluffJobsTechnologies'
-      additionalProperties: false
-
-    companyRating:
-      type: string
-      enum:
-        - "2.5"
-        - "3"
-        - "3.5"
-        - "4"
-        - "4.5"
 
   requestBodies:
-    newConfig:
-      description: Create new client
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              justJoinIt:
-                $ref: '#/components/schemas/justJoinItConfig'
-              noFluffJobs:
-                $ref: '#/components/schemas/noFluffJobsConfig'
-              companyRating:
-                $ref: '#/components/schemas/companyRating'
-              userId:
-                $ref: '#/components/schemas/uuid'
-            additionalProperties: false
     translateBody:
       description: Process text and translate it
       content:
@@ -256,10 +93,28 @@ components:
             properties:
               text:
                 type: string
-                maxLength: 200000
+                maxLength: 500000
             additionalProperties: false
 
   responses:
+    datasetResponse:
+      description: GET Dataset
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: integer
+                format: int32
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/datasetItem'
+            required:
+              - status
+              - data
+            additionalProperties: false
     translateResponse:
       description: Generic successful response
       content:
