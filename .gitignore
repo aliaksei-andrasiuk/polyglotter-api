@@ -115,3 +115,5 @@ Thumbs.db
 # Configs
 src/config/local.json
 src/config/development.json
+*-dataset.csv
+

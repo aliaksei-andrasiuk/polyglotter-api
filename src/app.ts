@@ -35,6 +35,9 @@ export class App {
         this.app.use(helmet());
         this.app.use(compression());
         this.app.use(nocache());
+        this.app.get('/', (_, res) => {
+            res.send('✅ API server is running. Visit /api-docs for OpenAPI docs.');
+        });
         this.app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
         this.app.use(bodyParser.json({ limit: '1mb', type: ['json', '*/json', '+json'] }));
         this.app.use('/api-docs', await getSpecUIMiddleware({ specPath: './src/openapi.yaml' }));

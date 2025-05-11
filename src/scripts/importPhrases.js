@@ -15,7 +15,7 @@ async function importCSV(filePath) {
         clean[normalizedKey] = typeof data[key] === 'string' ? data[key].trim() : data[key];
       }
 
-      const requiredFields = ['wordId', 'phraseId', 'sourceRoot', 'sourceWord', 'targetPhrase'];
+      const requiredFields = ['wordId', 'phraseId', 'sourceRoot', 'targetPhrase'];
       const isValid = requiredFields.every(field => clean[field] && clean[field].length > 0);
 
       if (!isValid) {
@@ -49,4 +49,4 @@ async function importCSV(filePath) {
     });
 }
 
-importCSV('pl-en-dataset.csv');
+importCSV('src/scripts/pl-en-dataset.csv');
