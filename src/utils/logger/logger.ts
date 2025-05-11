@@ -2,8 +2,8 @@ import config from 'config';
 import { Request } from 'express';
 import { createLogger, format, transports } from 'winston';
 
-import { Environment } from '../../types/enums/environment.enum';
 import formatter from './formatter';
+import { Environment } from '../../types/enums/environment.enum';
 
 export interface IRequestInfo {
     id: string;

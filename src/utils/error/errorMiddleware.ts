@@ -1,5 +1,5 @@
-import { IHttpError } from '../../types/errors';
 import handleError from './handleError';
+import { IHttpError } from '../../types/errors';
 
 const errorMiddleware = (error, req, res, _next) => {
     const formattedError = <IHttpError>handleError(error, { logger: req.context?.logger });

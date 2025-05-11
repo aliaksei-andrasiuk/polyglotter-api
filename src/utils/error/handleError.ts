@@ -1,9 +1,9 @@
 import config from 'config';
 import { Logger } from 'winston';
 
+import getFormattedError from './getFormattedError';
 import { Environment } from '../../types/enums/environment.enum';
 import { HttpError } from '../../types/errors';
-import getFormattedError from './getFormattedError';
 
 const handleError = (error, { logger }: { logger?: Logger } = {}): Error => {
     let converted = error;

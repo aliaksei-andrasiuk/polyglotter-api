@@ -10,12 +10,12 @@ import nocache from 'nocache';
 
 import getOpenAPIMiddleware from './middlewares/getOpenAPIMiddleware';
 import loggerContext from './middlewares/loggerContext.middleware';
+import validateAuthorizationKey from './middlewares/validateAuthorizationKey';
 import * as operationHandlers from './routes';
+import { connectDB } from './services'
 import errorMiddleware from './utils/error';
 import logger from './utils/logger';
 import getSpecUIMiddleware from './utils/spec-ui';
-import validateAuthorizationKey from './middlewares/validateAuthorizationKey';
-import { connectDB } from './services'
 
 const compression = require('compression')
 export class App {
