@@ -1,26 +1,61 @@
 import { prisma, TranslatedItem } from '../services';
 
 export const processAndTranslate = async (text: string): Promise<TranslatedItem[]> => {
-
     const dataset = await prisma.phraseMapping.findMany();
+    const sourceMap = new Map<string, typeof dataset>();
 
-    const seen = new Set<string>();
+    for (const entry of dataset) {
+        const word = entry.sourceWord;
+        const group = sourceMap.get(word);
+        if (group) {
+            group.push(entry);
+        } else {
+            sourceMap.set(word, [entry]);
+        }
+    }
+
+    const tokenizedText = tokenizeText(text.toLowerCase());
+
+    const wordPositions = new Map<string, number[]>();
+    tokenizedText.forEach((word, index) => {
+        if (!wordPositions.has(word)) {
+            wordPositions.set(word, []);
+        }
+        wordPositions.get(word)!.push(index);
+    });
+
+    const seenLines = new Set<string>();
     const replacedItems: TranslatedItem[] = [];
-    const tokenizedText = tokenizeText(text);
 
-    for (let index = 0; index < dataset.length; index++) {
-        const { sourcePrefix, sourceWord, targetPhrase, phraseId } = dataset[index];
+    for (const [word, positions] of wordPositions.entries()) {
+        const candidates = sourceMap.get(word);
+        if (!candidates) continue;
 
-        const wordIndex = tokenizedText.findIndex((word) => word.toLowerCase() === sourceWord);
-        const phrase = (wordIndex && tokenizedText[wordIndex - 1] === sourcePrefix) || (wordIndex && tokenizedText[wordIndex + 1] === sourcePrefix) ? targetPhrase : null;
+        for (const { sourcePrefix, targetPhrase, sourceWord } of candidates) {
+            const hasPrefix = sourcePrefix !== "";
 
-        if (phrase && !seen.has(phraseId)) {
-            replacedItems.push({
-                originalLine: `${tokenizedText[wordIndex - 1]} ${sourceWord}`,
-                translatedLine: phrase,
-            });
+            for (const pos of positions) {
+                const prev = tokenizedText[pos - 1] || "";
 
-            seen.add(phraseId);
+                const isMatch = hasPrefix
+                    ? (prev === sourcePrefix)
+                    : true;
+
+                if (isMatch) {
+                    const originalLine = hasPrefix
+                        ? `${prev} ${sourceWord}`
+                        : sourceWord;
+
+                    if (!seenLines.has(originalLine)) {
+                        replacedItems.push({
+                            originalLine,
+                            translatedLine: targetPhrase,
+                        });
+
+                        seenLines.add(originalLine);
+                    }
+                }
+            }
         }
     }
 
@@ -28,5 +63,5 @@ export const processAndTranslate = async (text: string): Promise<TranslatedItem[
 };
 
 const tokenizeText = (text: string): string[] => {
-  return text.match(/\b[\p{L}']+\b/gu) || [];
+  return text.match(/(?<![A-Za-zÀ-ȳĀ-ſА-Яа-яЁёĄąĆćĘęŁłŃńŚśŹźŻż])[A-Za-zÀ-ȳĀ-ſА-Яа-яЁёĄąĆćĘęŁłŃńŚśŹźŻż']+(?![A-Za-zÀ-ȳĀ-ſА-Яа-яЁёĄąĆćĘęŁłŃńŚśŹźŻż])/g)|| [];
 }

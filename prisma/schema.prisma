@@ -8,11 +8,15 @@ datasource db {
 }
 
 model PhraseMapping {
-  phraseId     String  @id
-  wordId       String
-  sourceRoot   String  @db.VarChar(100)
-  sourcePrefix String? @db.VarChar(100)
-  sourceWord   String  @db.VarChar(100)
-  targetPhrase String  @db.VarChar(255)
-  wordsCount   Int     @db.SmallInt
+    phraseId      String  @id                     // уникальный ID фразы
+    wordId        String                          // ID слова (возможно связка с другим словарём)
+    sourceRoot    String  @db.Text                // необязательно, но лучше без ограничения по длине
+    sourcePrefix  String  @default("") @db.Text   // не null, по умолчанию пустая строка
+    sourceWord    String  @db.Text                // lowercase
+    targetPhrase  String  @db.Text                // конечный перевод
+    wordsCount    Int     @db.SmallInt            // для доп логики/фильтрации
+
+    @@index([sourceWord])
+    @@index([sourceWord, sourcePrefix])
+    @@index([wordId])
 }
