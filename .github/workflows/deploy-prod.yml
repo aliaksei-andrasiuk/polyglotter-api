@@ -27,11 +27,11 @@ jobs:
         run: |
           rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ./ raspberrypi.tailf42ca6.ts.net:~/polyglotter-api
+            ./ pi@raspberrypi.tailf42ca6.ts.net:~/polyglotter-api
 
       - name: Deploy to PROD
         run: |
-          ssh raspberrypi.tailf42ca6.ts.net <<'EOF'
+          ssh pi@raspberrypi.tailf42ca6.ts.net <<'EOF'
             cd ~/polyglotter-api
             echo "${{ secrets.POSTGRES_PASSWORD }}" > docker/prod.env
             ENV=${{ vars.ENV }} docker compose down
