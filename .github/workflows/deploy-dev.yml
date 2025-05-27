@@ -1,0 +1,34 @@
+name: Deploy to DEV
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v1
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Rsync code to Raspberry Pi (DEV)
+        run: |
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ raspberrypi.tailf42ca6.ts.net:~/polyglotter-api-dev
+
+      - name: Deploy to DEV
+        run: |
+          ssh raspberrypi.tailf42ca6.ts.net <<'EOF'
+            cd ~/polyglotter-api-dev
+            echo "${{ secrets.POSTGRES_PASSWORD }}" > docker/dev.env
+            ENV=${{ vars.ENV }} docker compose down
+            ENV=${{ vars.ENV }} docker compose up -d --build
+          EOF
