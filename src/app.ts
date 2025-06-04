@@ -1,6 +1,5 @@
 import assert from 'assert';
 import bodyParser from 'body-parser';
-import config from 'config';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -57,7 +56,7 @@ export class App {
     }
 
     start() {
-        const port = config.get('service.port');
+        const port = process.env.PORT || 3000;
 
         this.server = this.app.listen(port, () => {
             logger.info(`server started on port ${port}`);
@@ -78,4 +77,4 @@ export class App {
     }
 }
 
-export default new App({ environment: config.get('environment') });
+export default new App({ environment: process.env.NODE_ENV });

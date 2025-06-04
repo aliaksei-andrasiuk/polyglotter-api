@@ -1,5 +1,5 @@
 export enum Environment {
-    LOCALHOST = 'localhost',
-    DEV = 'development',
-    PROD = 'production',
+    LOCALHOST = 'local',
+    DEV = 'dev',
+    PROD = 'prod',
 }
