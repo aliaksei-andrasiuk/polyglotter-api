@@ -17,7 +17,8 @@
     "start:prod": "node dist/index.js NODE_ENV=production",
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
-    "import": "node ./src/scripts/importPhrases.js"
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
