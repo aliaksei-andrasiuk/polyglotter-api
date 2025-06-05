@@ -29,6 +29,7 @@ jobs:
         DATABASE_URL=${{ secrets.DATABASE_URL }}
         PORT=3000
         NODE_ENV=dev
+        HOST=0.0.0.0
         EOF
 
         scp -o StrictHostKeyChecking=no .env root@49.12.75.106:/root/polyglotter-api-dev/.env

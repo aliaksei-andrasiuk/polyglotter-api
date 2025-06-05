@@ -56,9 +56,10 @@ export class App {
     }
 
     start() {
-        const port = process.env.PORT || 3000;
+        const port = Number(process.env.PORT) || 3000;
+        const host = process.env.HOST || '0.0.0.0';
 
-        this.server = this.app.listen(port, () => {
+        this.server = this.app.listen(port, host, () => {
             logger.info(`server started on port ${port}`);
         });
 
