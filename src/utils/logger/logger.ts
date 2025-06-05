@@ -1,4 +1,3 @@
-import config from 'config';
 import { Request } from 'express';
 import { createLogger, format, transports } from 'winston';
 
@@ -47,4 +46,4 @@ export const initLogger = (environment = Environment.LOCALHOST) => {
     return logger;
 };
 
-export default initLogger(config.get('environment'));
+export default initLogger(process.env.NODE_ENV as Environment);

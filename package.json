@@ -17,14 +17,14 @@
     "start:prod": "node dist/index.js NODE_ENV=production",
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
-    "import": "node ./src/scripts/importPhrases.js"
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "JSONStream": "^1.3.5",
     "body-parser": "^1.19.2",
     "compression": "^1.7.4",
-    "config": "^3.3.9",
     "cors": "^2.8.5",
     "express": "^4.17.3",
     "express-openapi-validator": "^5.0.4",

@@ -1,0 +1,41 @@
+name: Deploy to Prod
+
+on:
+  workflow_dispatch:
+
+env:
+  ENVIRONMENT_NAME: prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Create and upload .env
+      run: |
+        cat <<EOF > .env
+        POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_DB=polyglotter_prod
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        PORT=3000
+        NODE_ENV=prod
+        EOF
+
+        scp .env root@159.69.240.52:/root/polyglotter-api/.env
+
+    - name: Deploy to server
+      run: |
+        ssh -o StrictHostKeyChecking=no root@159.69.240.52 << 'EOF'
+          cd /root/polyglotter-api
+          git pull origin main
+          docker compose down
+          docker compose up -d --build
+        EOF

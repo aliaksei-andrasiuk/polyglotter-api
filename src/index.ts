@@ -1,5 +1,3 @@
-process.env.NODE_CONFIG_DIR = './src/config';
-
 import app from './app';
 import { setHandleShutdown } from './utils/registerGracefulShutdown';
 

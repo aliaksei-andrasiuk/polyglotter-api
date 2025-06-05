@@ -1,4 +1,3 @@
-import config from 'config';
 import { Logger } from 'winston';
 
 import getFormattedError from './getFormattedError';
@@ -14,9 +13,7 @@ const handleError = (error, { logger }: { logger?: Logger } = {}): Error => {
 
     logger?.error(converted);
 
-    const environment: string = config.get('environment');
-
-    if (environment !== Environment.LOCALHOST && converted.status >= 500) {
+    if (process.env.NODE_ENV !== Environment.LOCALHOST && converted.status >= 500) {
         converted.message = 'Something went wrong';
     }
 

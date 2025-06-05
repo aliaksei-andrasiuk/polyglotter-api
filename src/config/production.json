@@ -1,6 +1,0 @@
-{
-  "service": {
-    "port": 8081
-  },
-  "environment": "production"
-}

@@ -1,0 +1,43 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  ENVIRONMENT_NAME: dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Create and upload .env
+      run: |
+        cat <<EOF > .env
+        POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_DB=polyglotter_dev
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        PORT=3000
+        NODE_ENV=dev
+        EOF
+
+        scp -o StrictHostKeyChecking=no .env root@49.12.75.106:/root/polyglotter-api-dev/.env
+
+    - name: Deploy via SSH
+      run: |
+        ssh -o StrictHostKeyChecking=no root@49.12.75.106 << 'EOF'
+          cd /root/polyglotter-api-dev
+          git pull origin dev
+          docker compose down
+          docker compose up -d --build
+        EOF
