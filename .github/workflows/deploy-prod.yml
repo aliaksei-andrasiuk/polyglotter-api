@@ -29,9 +29,9 @@ jobs:
         NODE_ENV=prod
         EOF
 
-        scp .env root@159.69.240.52:/root/polyglotter-api/.env
+        scp -o StrictHostKeyChecking=no .env root@159.69.240.52:/root/polyglotter-api/.env
 
-    - name: Deploy to server
+    - name: Deploy via SSH
       run: |
         ssh -o StrictHostKeyChecking=no root@159.69.240.52 << 'EOF'
           cd /root/polyglotter-api
