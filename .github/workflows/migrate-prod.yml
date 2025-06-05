@@ -1,0 +1,24 @@
+name: Run Migrations on Prod
+
+on:
+  workflow_dispatch:
+
+env:
+  ENVIRONMENT_NAME: prod
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+    - uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Run Prisma Migrations
+      run: |
+        ssh -o StrictHostKeyChecking=no root@159.69.240.52 << 'EOF'
+          cd /root/polyglotter-api
+          docker compose exec app npx prisma migrate deploy
+        EOF
