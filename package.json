@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "tsnd --respawn \"src/index.ts\"",
-    "start:prod": "node dist/index.js NODE_ENV=production",
+    "start:prod": "node dist/index.js",
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
     "prisma:migrate": "prisma migrate deploy",
@@ -26,6 +26,7 @@
     "body-parser": "^1.19.2",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
     "express": "^4.17.3",
     "express-openapi-validator": "^5.0.4",
     "helmet": "^7.0.0",
