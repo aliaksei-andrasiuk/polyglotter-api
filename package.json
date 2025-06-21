@@ -14,7 +14,7 @@
   },
   "scripts": {
     "start": "tsnd --respawn \"src/index.ts\"",
-    "start:prod": "node dist/index.js NODE_ENV=production",
+    "start:prod": "node dist/index.js",
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
     "prisma:migrate": "prisma migrate deploy",

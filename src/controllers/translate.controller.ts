@@ -59,7 +59,7 @@ export const processAndTranslate = async (text: string): Promise<TranslatedItem[
         }
     }
 
-    return replacedItems;
+    return replacedItems.sort((a, b) => b.translatedLine.length - a.translatedLine.length);
 };
 
 const tokenizeText = (text: string): string[] => {
