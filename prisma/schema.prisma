@@ -1,22 +1,168 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
+/**
+ * Текущая плоская таблица для существующего словаря PL -> EN.
+ * Оставляем как источник данных для миграции.
+ */
 model PhraseMapping {
     phraseId      String  @id                     // уникальный ID фразы
     wordId        String                          // ID слова (возможно связка с другим словарём)
     sourceRoot    String  @db.Text                // необязательно, но лучше без ограничения по длине
     sourcePrefix  String  @default("") @db.Text   // не null, по умолчанию пустая строка
     sourceWord    String  @db.Text                // lowercase
-    targetPhrase  String  @db.Text                // конечный перевод
-    wordsCount    Int     @db.SmallInt            // для доп логики/фильтрации
+    targetPhrase  String  @db.Text                // конечный перевод (EN слово или фраза)
+    wordsCount    Int     @db.SmallInt            // количество слов в source (для логики)
 
     @@index([sourceWord])
     @@index([sourceWord, sourcePrefix])
     @@index([wordId])
+}
+
+/**
+ * Новая нормализованная модель словаря.
+ * Пока что реально будем использовать только pair PL <-> EN,
+ * но схема сразу готова к расширению.
+ */
+
+enum DifficultyLevel {
+    BASIC
+    INTERMEDIATE
+    ADVANCED
+}
+
+model Language {
+    id            Int               @id @default(autoincrement())
+    code          String            @unique  // "pl", "en"
+    name          String
+
+    lemmas        Lemma[]
+    phrases       Phrase[]
+
+    bundlesFrom   DictionaryBundle[] @relation("SourceLanguageBundles")
+    bundlesTo     DictionaryBundle[] @relation("TargetLanguageBundles")
+}
+
+/**
+ * Лемма — базовая форма слова ("dom", "increase").
+ */
+model Lemma {
+    id               Int               @id @default(autoincrement())
+    languageId       Int
+    language         Language          @relation(fields: [languageId], references: [id])
+
+    text             String            // базовая форма
+    pos              String?           // "NOUN", "VERB" и т.п.
+    frequency        Float?
+    difficulty       DifficultyLevel?
+
+    wordForms        WordForm[]
+
+    translationsFrom Translation[]     @relation("SourceLemmaTranslations")
+    translationsTo   Translation[]     @relation("TargetLemmaTranslations")
+
+    @@index([languageId, text])
+    @@unique([languageId, text])
+}
+
+/**
+ * Конкретная словоформа ("domu", "domem", "increasing" и т.п.).
+ * Можно заполнить позже, если будешь лемматизировать.
+ */
+model WordForm {
+    id        Int     @id @default(autoincrement())
+    lemmaId   Int
+    lemma     Lemma   @relation(fields: [lemmaId], references: [id])
+
+    form      String
+    morphTag  String? // морфологический тег
+
+    @@index([lemmaId])
+    @@index([form])
+    @@unique([lemmaId, form])
+}
+
+/**
+ * Фразы: идиомы, фразовые глаголы, устойчивые выражения.
+ * В твоём случае часть данных из PhraseMapping с wordsCount > 1
+ * как раз сюда и поедет.
+ */
+model Phrase {
+    id               Int               @id @default(autoincrement())
+    languageId       Int
+    language         Language          @relation(fields: [languageId], references: [id])
+
+    text             String            // "take off", "wziąć udział"
+    type             String?           // "phrasal_verb" | "idiom" | "collocation" | ...
+    frequency        Float?
+    difficulty       DifficultyLevel?
+
+    translationsFrom Translation[]     @relation("SourcePhraseTranslations")
+    translationsTo   Translation[]     @relation("TargetPhraseTranslations")
+
+    @@index([languageId, text])
+    @@unique([languageId, text])
+}
+
+/**
+ * Переводы между lemma/phrase.
+ * Примеры:
+ *  - sourceLemmaId (pl "dom") -> targetLemmaId (en "house")
+ *  - sourcePhraseId (pl "wsiąść do pociągu") -> targetPhraseId (en "get on a train")
+ *  - смешанные варианты lemma <-> phrase тоже возможны.
+ */
+model Translation {
+    id              Int       @id @default(autoincrement())
+
+    // source
+    sourceLemmaId   Int?
+    sourceLemma     Lemma?    @relation("SourceLemmaTranslations", fields: [sourceLemmaId], references: [id])
+
+    sourcePhraseId  Int?
+    sourcePhrase    Phrase?   @relation("SourcePhraseTranslations", fields: [sourcePhraseId], references: [id])
+
+    // target
+    targetLemmaId   Int?
+    targetLemma     Lemma?    @relation("TargetLemmaTranslations", fields: [targetLemmaId], references: [id])
+
+    targetPhraseId  Int?
+    targetPhrase    Phrase?   @relation("TargetPhraseTranslations", fields: [targetPhraseId], references: [id])
+
+    confidence      Float?
+    senseKey        String?
+    isPreferred     Boolean   @default(false)
+
+    @@index([sourceLemmaId])
+    @@index([sourcePhraseId])
+    @@index([targetLemmaId])
+    @@index([targetPhraseId])
+}
+
+/**
+ * Метаданные словарных бандлов для расширения (Tukan-style).
+ * Реально можно начать использовать позже, когда дойдём до генерации бандлов.
+ */
+model DictionaryBundle {
+    id               Int       @id @default(autoincrement())
+
+    sourceLanguageId Int
+    targetLanguageId Int
+
+    sourceLanguage   Language  @relation("SourceLanguageBundles", fields: [sourceLanguageId], references: [id])
+    targetLanguage   Language  @relation("TargetLanguageBundles", fields: [targetLanguageId], references: [id])
+
+    version          String    // "2025-11-01-01"
+    url              String    // ссылка на json.gz / словарный бандл
+    entriesCount     Int
+    createdAt        DateTime  @default(now())
+    isActive         Boolean   @default(true)
+
+    @@unique([sourceLanguageId, targetLanguageId, version])
+    @@index([sourceLanguageId, targetLanguageId, isActive])
 }
