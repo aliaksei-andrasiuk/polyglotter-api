@@ -38,10 +38,10 @@ model Language {
     lemmas      Lemma[]
     phrases     Phrase[]
 
-    // Обратная связь для PhrasePattern.sourceLanguage
-    phrasePatterns PhrasePattern[]
+    // Обратные связи для PhrasePattern
+    sourcePatterns PhrasePattern[] @relation("SourcePatternLanguage")
+    targetPatterns PhrasePattern[] @relation("TargetPatternLanguage")
 }
-
 //
 // Лемма — базовая форма слова ("dom", "increase").
 //
@@ -171,26 +171,33 @@ enum DifficultyLevel {
 model PhrasePattern {
     id               Int      @id @default(autoincrement())
 
-    // Язык, в рамках которого матчим anchorText/prefixText
+    // Пара языков
     sourceLanguageId Int
-    sourceLanguage   Language @relation(fields: [sourceLanguageId], references: [id])
+    targetLanguageId Int
 
+    sourceLanguage   Language @relation("SourcePatternLanguage", fields: [sourceLanguageId], references: [id])
+    targetLanguage   Language @relation("TargetPatternLanguage", fields: [targetLanguageId], references: [id])
+
+    // Ссылки на нормализованные сущности
     sourcePhraseId   Int?
     targetPhraseId   Int?
 
-    // Явно именуем обе связи на Phrase
     sourcePhrase     Phrase?  @relation("PhrasePatternSourcePhrase", fields: [sourcePhraseId], references: [id])
     targetPhrase     Phrase?  @relation("PhrasePatternTargetPhrase", fields: [targetPhraseId], references: [id])
 
     sourceLemmaId    Int?
     targetLemmaId    Int?
 
-    // Явно именуем обе связи на Lemma
     sourceLemma      Lemma?   @relation("PhrasePatternSourceLemma", fields: [sourceLemmaId], references: [id])
     targetLemma      Lemma?   @relation("PhrasePatternTargetLemma", fields: [targetLemmaId], references: [id])
 
-    anchorText       String   // токен, по которому матчим
-    prefixText       String?  // всё слева от anchor
+    // Runtime-ключи
+    anchorText       String   // то, что матчим в тексте (sourceWord)
+    prefixText       String?  // левый контекст (sourcePrefix)
+    anchorIndex      Int?     // позиция anchor в sourcePhrase (для быстрых проверок)
 
+    // Быстрый lookup по anchor
     @@index([sourceLanguageId, anchorText])
+
+    @@unique([sourceLanguageId, targetLanguageId, anchorText, prefixText, sourcePhraseId, sourceLemmaId, targetPhraseId, targetLemmaId])
 }
