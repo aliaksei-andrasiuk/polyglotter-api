@@ -1,12 +1,28 @@
 // prisma/schema.prisma
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
+}
+
+enum Environment {
+    dev
+    prod
+}
+
+enum LanguageCode {
+    pl
+    en
+}
+
+enum DifficultyLevel {
+    BASIC
+    INTERMEDIATE
+    ADVANCED
 }
 
 //
@@ -145,27 +161,65 @@ model Translation {
 // Метаданные словарных бандлов для расширения (Tukan-style).
 // Реально можно начать использовать позже, когда дойдём до генерации бандлов.
 //
+/**
+ * Each record represents one versioned gzipped dictionary bundle on disk,
+ * for a specific language pair and environment.
+ *
+ * Files on disk:
+ *  - bundle-<version>.json.gz   (versioned)
+ *  - LatestJSON.gz             (symlink/copy pointing to latest)
+ */
 model DictionaryBundle {
-    id               Int      @id @default(autoincrement())
+    id               Int         @id @default(autoincrement())
+
+    env              Environment
+
     sourceLanguageId Int
     targetLanguageId Int
+
+    /**
+     * Version identifier for this bundle.
+     * Recommended format: ISO timestamp like 2025-11-24T00-15-03Z
+     */
     version          String
-    url              String
+
+    /**
+     * Name of the versioned gzip file on disk, e.g.
+     * bundle-2025-11-24T00-15-03Z.json.gz
+     */
+    fileName         String
+
+    /**
+     * SHA256 of the gzip file. Used for ETag and integrity checks.
+     */
+    sha256           String      @db.VarChar(64)
+
+    /**
+     * Size of gzip in bytes (Content-Length).
+     */
+    sizeBytes        Int
+
+    /**
+     * Number of dictionary entries inside the bundle.
+     */
     entriesCount     Int
-    createdAt        DateTime @default(now())
-    isActive         Boolean  @default(true)
 
-    sourceLanguage   Language @relation("SourceLanguageBundles", fields: [sourceLanguageId], references: [id])
-    targetLanguage   Language @relation("TargetLanguageBundles", fields: [targetLanguageId], references: [id])
+    /**
+     * Exactly one bundle per (env, sourceLanguageId, targetLanguageId)
+     * should have isLatest=true. DB-level guarantee added via partial index.
+     */
+    isLatest         Boolean     @default(false)
 
-    @@unique([sourceLanguageId, targetLanguageId, version])
-    @@index([sourceLanguageId, targetLanguageId, isActive])
-}
+    createdAt        DateTime    @default(now())
 
-enum DifficultyLevel {
-    BASIC
-    INTERMEDIATE
-    ADVANCED
+    sourceLanguage   Language    @relation("SourceLanguageBundles", fields: [sourceLanguageId], references: [id])
+    targetLanguage   Language    @relation("TargetLanguageBundles", fields: [targetLanguageId], references: [id])
+
+    // Unique versions per pair+env
+    @@unique([env, sourceLanguageId, targetLanguageId, version])
+
+    // Fast latest lookup
+    @@index([env, sourceLanguageId, targetLanguageId, isLatest])
 }
 
 model PhrasePattern {
