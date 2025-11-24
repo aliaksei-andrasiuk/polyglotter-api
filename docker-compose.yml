@@ -15,6 +15,8 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - app-network
+    ports:
+      - "127.0.0.1:5432:5432"
 
   app:
     build: .

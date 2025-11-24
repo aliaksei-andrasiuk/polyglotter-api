@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
     provider = "prisma-client-js"
 }
@@ -7,136 +9,131 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-/**
- * Текущая плоская таблица для существующего словаря PL -> EN.
- * Оставляем как источник данных для миграции.
- */
+//
+// Текущая плоская таблица для существующего словаря PL -> EN.
+// Оставляем как источник данных для миграции.
+//
 model PhraseMapping {
-    phraseId      String  @id                     // уникальный ID фразы
-    wordId        String                          // ID слова (возможно связка с другим словарём)
-    sourceRoot    String  @db.Text                // необязательно, но лучше без ограничения по длине
-    sourcePrefix  String  @default("") @db.Text   // не null, по умолчанию пустая строка
-    sourceWord    String  @db.Text                // lowercase
-    targetPhrase  String  @db.Text                // конечный перевод (EN слово или фраза)
-    wordsCount    Int     @db.SmallInt            // количество слов в source (для логики)
+    phraseId     String  @id
+    wordId       String
+    sourceRoot   String
+    sourcePrefix String  @default("")
+    sourceWord   String
+    targetPhrase String
+    wordsCount   Int     @db.SmallInt
 
     @@index([sourceWord])
     @@index([sourceWord, sourcePrefix])
     @@index([wordId])
 }
 
-/**
- * Новая нормализованная модель словаря.
- * Пока что реально будем использовать только pair PL <-> EN,
- * но схема сразу готова к расширению.
- */
-
-enum DifficultyLevel {
-    BASIC
-    INTERMEDIATE
-    ADVANCED
-}
-
 model Language {
-    id            Int               @id @default(autoincrement())
-    code          String            @unique  // "pl", "en"
-    name          String
+    id          Int                @id @default(autoincrement())
+    code        String             @unique
+    name        String
 
-    lemmas        Lemma[]
-    phrases       Phrase[]
+    bundlesFrom DictionaryBundle[] @relation("SourceLanguageBundles")
+    bundlesTo   DictionaryBundle[] @relation("TargetLanguageBundles")
 
-    bundlesFrom   DictionaryBundle[] @relation("SourceLanguageBundles")
-    bundlesTo     DictionaryBundle[] @relation("TargetLanguageBundles")
+    lemmas      Lemma[]
+    phrases     Phrase[]
+
+    // Обратная связь для PhrasePattern.sourceLanguage
+    phrasePatterns PhrasePattern[]
 }
 
-/**
- * Лемма — базовая форма слова ("dom", "increase").
- */
+//
+// Лемма — базовая форма слова ("dom", "increase").
+//
 model Lemma {
-    id               Int               @id @default(autoincrement())
+    id               Int              @id @default(autoincrement())
     languageId       Int
-    language         Language          @relation(fields: [languageId], references: [id])
-
-    text             String            // базовая форма
-    pos              String?           // "NOUN", "VERB" и т.п.
+    text             String
+    pos              String?
     frequency        Float?
     difficulty       DifficultyLevel?
+
+    language         Language         @relation(fields: [languageId], references: [id])
+
+    translationsFrom Translation[]    @relation("SourceLemmaTranslations")
+    translationsTo   Translation[]    @relation("TargetLemmaTranslations")
 
     wordForms        WordForm[]
 
-    translationsFrom Translation[]     @relation("SourceLemmaTranslations")
-    translationsTo   Translation[]     @relation("TargetLemmaTranslations")
+    // Обратные связи для PhrasePattern
+    patternsAsSource PhrasePattern[]  @relation("PhrasePatternSourceLemma")
+    patternsAsTarget PhrasePattern[]  @relation("PhrasePatternTargetLemma")
 
-    @@index([languageId, text])
     @@unique([languageId, text])
+    @@index([languageId, text])
 }
 
-/**
- * Конкретная словоформа ("domu", "domem", "increasing" и т.п.).
- * Можно заполнить позже, если будешь лемматизировать.
- */
+//
+// Конкретная словоформа ("domu", "domem", "increasing" и т.п.).
+// Можно заполнить позже, если будешь лемматизировать.
+//
 model WordForm {
-    id        Int     @id @default(autoincrement())
-    lemmaId   Int
-    lemma     Lemma   @relation(fields: [lemmaId], references: [id])
+    id       Int     @id @default(autoincrement())
+    lemmaId  Int
+    form     String
+    morphTag String?
 
-    form      String
-    morphTag  String? // морфологический тег
+    lemma    Lemma   @relation(fields: [lemmaId], references: [id])
 
+    @@unique([lemmaId, form])
     @@index([lemmaId])
     @@index([form])
-    @@unique([lemmaId, form])
 }
 
-/**
- * Фразы: идиомы, фразовые глаголы, устойчивые выражения.
- * В твоём случае часть данных из PhraseMapping с wordsCount > 1
- * как раз сюда и поедет.
- */
+//
+// Фразы: идиомы, фразовые глаголы, устойчивые выражения.
+// В твоём случае часть данных из PhraseMapping с wordsCount > 1
+// как раз сюда и поедет.
+//
 model Phrase {
-    id               Int               @id @default(autoincrement())
+    id               Int              @id @default(autoincrement())
     languageId       Int
-    language         Language          @relation(fields: [languageId], references: [id])
-
-    text             String            // "take off", "wziąć udział"
-    type             String?           // "phrasal_verb" | "idiom" | "collocation" | ...
+    text             String
+    type             String?
     frequency        Float?
     difficulty       DifficultyLevel?
 
-    translationsFrom Translation[]     @relation("SourcePhraseTranslations")
-    translationsTo   Translation[]     @relation("TargetPhraseTranslations")
+    language         Language         @relation(fields: [languageId], references: [id])
 
-    @@index([languageId, text])
+    translationsFrom Translation[]    @relation("SourcePhraseTranslations")
+    translationsTo   Translation[]    @relation("TargetPhraseTranslations")
+
+    // Обратные связи для PhrasePattern
+    patternsAsSource PhrasePattern[]  @relation("PhrasePatternSourcePhrase")
+    patternsAsTarget PhrasePattern[]  @relation("PhrasePatternTargetPhrase")
+
     @@unique([languageId, text])
+    @@index([languageId, text])
 }
 
-/**
- * Переводы между lemma/phrase.
- * Примеры:
- *  - sourceLemmaId (pl "dom") -> targetLemmaId (en "house")
- *  - sourcePhraseId (pl "wsiąść do pociągu") -> targetPhraseId (en "get on a train")
- *  - смешанные варианты lemma <-> phrase тоже возможны.
- */
+//
+// Переводы между lemma/phrase.
+// Примеры:
+//  - sourceLemmaId (pl "dom") -> targetLemmaId (en "house")
+//  - sourcePhraseId (pl "wsiąść do pociągu") -> targetPhraseId (en "get on a train")
+//  - смешанные варианты lemma <-> phrase тоже возможны.
+//
 model Translation {
-    id              Int       @id @default(autoincrement())
+    id             Int     @id @default(autoincrement())
 
-    // source
-    sourceLemmaId   Int?
-    sourceLemma     Lemma?    @relation("SourceLemmaTranslations", fields: [sourceLemmaId], references: [id])
+    sourceLemmaId  Int?
+    sourcePhraseId Int?
+    targetLemmaId  Int?
+    targetPhraseId Int?
 
-    sourcePhraseId  Int?
-    sourcePhrase    Phrase?   @relation("SourcePhraseTranslations", fields: [sourcePhraseId], references: [id])
+    confidence     Float?
+    senseKey       String?
+    isPreferred    Boolean @default(false)
 
-    // target
-    targetLemmaId   Int?
-    targetLemma     Lemma?    @relation("TargetLemmaTranslations", fields: [targetLemmaId], references: [id])
-
-    targetPhraseId  Int?
-    targetPhrase    Phrase?   @relation("TargetPhraseTranslations", fields: [targetPhraseId], references: [id])
-
-    confidence      Float?
-    senseKey        String?
-    isPreferred     Boolean   @default(false)
+    sourceLemma    Lemma?  @relation("SourceLemmaTranslations", fields: [sourceLemmaId], references: [id])
+    sourcePhrase   Phrase? @relation("SourcePhraseTranslations", fields: [sourcePhraseId], references: [id])
+    targetLemma    Lemma?  @relation("TargetLemmaTranslations", fields: [targetLemmaId], references: [id])
+    targetPhrase   Phrase? @relation("TargetPhraseTranslations", fields: [targetPhraseId], references: [id])
 
     @@index([sourceLemmaId])
     @@index([sourcePhraseId])
@@ -144,25 +141,56 @@ model Translation {
     @@index([targetPhraseId])
 }
 
-/**
- * Метаданные словарных бандлов для расширения (Tukan-style).
- * Реально можно начать использовать позже, когда дойдём до генерации бандлов.
- */
+//
+// Метаданные словарных бандлов для расширения (Tukan-style).
+// Реально можно начать использовать позже, когда дойдём до генерации бандлов.
+//
 model DictionaryBundle {
-    id               Int       @id @default(autoincrement())
-
+    id               Int      @id @default(autoincrement())
     sourceLanguageId Int
     targetLanguageId Int
-
-    sourceLanguage   Language  @relation("SourceLanguageBundles", fields: [sourceLanguageId], references: [id])
-    targetLanguage   Language  @relation("TargetLanguageBundles", fields: [targetLanguageId], references: [id])
-
-    version          String    // "2025-11-01-01"
-    url              String    // ссылка на json.gz / словарный бандл
+    version          String
+    url              String
     entriesCount     Int
-    createdAt        DateTime  @default(now())
-    isActive         Boolean   @default(true)
+    createdAt        DateTime @default(now())
+    isActive         Boolean  @default(true)
+
+    sourceLanguage   Language @relation("SourceLanguageBundles", fields: [sourceLanguageId], references: [id])
+    targetLanguage   Language @relation("TargetLanguageBundles", fields: [targetLanguageId], references: [id])
 
     @@unique([sourceLanguageId, targetLanguageId, version])
     @@index([sourceLanguageId, targetLanguageId, isActive])
+}
+
+enum DifficultyLevel {
+    BASIC
+    INTERMEDIATE
+    ADVANCED
+}
+
+model PhrasePattern {
+    id               Int      @id @default(autoincrement())
+
+    // Язык, в рамках которого матчим anchorText/prefixText
+    sourceLanguageId Int
+    sourceLanguage   Language @relation(fields: [sourceLanguageId], references: [id])
+
+    sourcePhraseId   Int?
+    targetPhraseId   Int?
+
+    // Явно именуем обе связи на Phrase
+    sourcePhrase     Phrase?  @relation("PhrasePatternSourcePhrase", fields: [sourcePhraseId], references: [id])
+    targetPhrase     Phrase?  @relation("PhrasePatternTargetPhrase", fields: [targetPhraseId], references: [id])
+
+    sourceLemmaId    Int?
+    targetLemmaId    Int?
+
+    // Явно именуем обе связи на Lemma
+    sourceLemma      Lemma?   @relation("PhrasePatternSourceLemma", fields: [sourceLemmaId], references: [id])
+    targetLemma      Lemma?   @relation("PhrasePatternTargetLemma", fields: [targetLemmaId], references: [id])
+
+    anchorText       String   // токен, по которому матчим
+    prefixText       String?  // всё слева от anchor
+
+    @@index([sourceLanguageId, anchorText])
 }
